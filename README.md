@@ -127,13 +127,6 @@ Logs tersimpan di `logs/litvm-bot.log`:
 tail -f logs/litvm-bot.log
 ```
 
-## Cost Estimation
-
-Per 101 akun (monthly):
-- **Proxies:** ~$100/month (residential)
-- **2Captcha:** ~$30/month
-- **Total:** ~$130/month
-
 ## Troubleshooting
 
 ### Faucet claim gagal
