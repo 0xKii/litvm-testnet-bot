@@ -1,0 +1,26 @@
+{
+  "name": "litvm-testnet-bot",
+  "version": "1.0.0",
+  "description": "Full automation bot for LitVM testnet - Phase 1-4",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "faucet": "node src/phase1-faucet.js",
+    "deploy": "node src/phase2-deploy.js",
+    "ecosystem": "node src/phase3-ecosystem.js",
+    "orchestrate": "node src/phase4-orchestrate.js",
+    "test": "node src/test.js"
+  },
+  "dependencies": {
+    "ethers": "^6.11.1",
+    "playwright": "^1.42.1",
+    "axios": "^1.6.7",
+    "dotenv": "^16.4.5",
+    "winston": "^3.11.0",
+    "2captcha": "^3.0.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.42.1"
+  }
+}

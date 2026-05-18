@@ -1,0 +1,36 @@
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+
+# Private Keys & Wallets
+private-keys-*.txt
+proxies.txt
+proxies-*.txt
+temp-keys.txt
+
+# Data & Logs
+logs/
+data/
+*.log
+
+# Node modules
+node_modules/
+package-lock.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+temp/
+tmp/
+*.tmp
