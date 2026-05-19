@@ -15,9 +15,18 @@ export const config = {
   txPerDay: parseInt(process.env.TX_PER_DAY || '10'),
   gasLimitMultiplier: parseFloat(process.env.GAS_LIMIT_MULTIPLIER || '1.2'),
   maxRetries: parseInt(process.env.MAX_RETRIES || '3'),
-  dexSwapAmount: process.env.DEX_SWAP_AMOUNT || '0.001',
-  nftMintEnabled: process.env.NFT_MINT_ENABLED === 'true',
-  domainRegisterEnabled: process.env.DOMAIN_REGISTER_ENABLED === 'true',
+  // Phase 3 config
+  dexSwaps: parseInt(process.env.DEX_SWAPS || '3'),
+  nftMints: parseInt(process.env.NFT_MINTS || '2'),
+  domainRegisters: parseInt(process.env.DOMAIN_REGISTERS || '1'),
+  defiInteractions: parseInt(process.env.DEFI_INTERACTIONS || '2'),
+  gamePlays: parseInt(process.env.GAME_PLAYS || '1'),
+  
+  // Phase 4 config
+  maintenanceActions: parseInt(process.env.MAINTENANCE_ACTIONS || '5'),
+  dappSelectionMode: process.env.DAPP_SELECTION_MODE || 'random',
+  
+  // Legacy
   multiAccountEnabled: process.env.MULTI_ACCOUNT_ENABLED === 'true',
   accountDelay: parseInt(process.env.ACCOUNT_DELAY_SECONDS || '60') * 1000,
   randomizeActions: process.env.RANDOMIZE_ACTIONS === 'true'

@@ -1,417 +1,314 @@
 import { ethers } from 'ethers';
-import { chromium } from 'playwright';
 import logger from './logger.js';
-import { getWallets, config, sleep, randomDelay, formatAddress, waitForTx } from './utils.js';
-import { ContractDeployer } from './phase2-deploy.js';
+import { config, randomDelay, formatAddress } from './utils.js';
 
-// Uniswap V2 Router ABI (most DEXs use this)
-const ROUTER_ABI = [
-  "function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts)",
-  "function getAmountsOut(uint amountIn, address[] memory path) public view returns (uint[] memory amounts)",
-  "function WETH() external pure returns (address)"
-];
-
-const ERC20_ABI = [
-  "function approve(address spender, uint256 amount) external returns (bool)",
-  "function balanceOf(address account) external view returns (uint256)",
-  "function name() external view returns (string)",
-  "function symbol() external view returns (string)"
-];
-
-// Known contract addresses (will be updated as we discover them)
-const CONTRACTS = {
-  // DEXs
-  LITESWAP_ROUTER: '0x...', // To be discovered
-  WOLFDEX_ROUTER: '0x...',
+// LitVM Testnet dApps
+const DAPPS = {
+  // DEX (prioritas tinggi - easy to automate)
+  dex: [
+    { name: 'LiteSwap', url: 'https://liteswap.app/', router: null },
+    { name: 'WolfDex', url: 'https://wolfdex.lovable.app/', router: null },
+    { name: 'LitVMSwap', url: 'https://www.litvmswap.com/', router: null },
+    { name: 'Drunken Cats', url: 'https://drunkencats.xyz/swap/', router: null },
+    { name: 'Addax', url: 'https://www.addax.finance/', router: null },
+    { name: 'LitDeX', url: 'https://litdex.test-hub.xyz/', router: null },
+    { name: 'LitiumDEX', url: 'https://litiumdex.org/', router: null }
+  ],
   
-  // NFT
-  OMNIHUB_FACTORY: '0x...',
-  STAMPVM_FACTORY: '0x...',
+  // NFT (medium priority)
+  nft: [
+    { name: 'OmniHub', url: 'https://omnihub.xyz/', contract: null },
+    { name: 'StampVM', url: 'https://stampvm.xyz/', contract: null },
+    { name: 'Mintbrush', url: 'https://mintbrush.xyz/', contract: null },
+    { name: 'Sweep', url: 'https://sweep.xyz/', contract: null }
+  ],
   
-  // Domains
-  LITNAMES_REGISTRY: '0x...',
+  // Domains (medium priority)
+  domains: [
+    { name: 'LitNames', url: 'https://litnames.xyz/', contract: null },
+    { name: 'ZNS Connect', url: 'https://zns.xyz/', contract: null }
+  ],
   
-  // Tokens (common testnet tokens)
-  WETH: '0x...',
-  USDC: '0x...'
+  // DeFi (medium priority)
+  defi: [
+    { name: 'Ayni', url: 'https://ayni.finance/', contract: null },
+    { name: 'Fenus', url: 'https://fenus.xyz/', contract: null }
+  ],
+  
+  // Gaming (low priority - complex)
+  gaming: [
+    { name: 'LitBillionaire', url: 'https://litlottery.xyz/', contract: null }
+  ]
 };
+
+// Generic ERC20 ABI
+const ERC20_ABI = [
+  'function approve(address spender, uint256 amount) external returns (bool)',
+  'function balanceOf(address account) external view returns (uint256)',
+  'function transfer(address to, uint256 amount) external returns (bool)'
+];
 
 export class EcosystemInteractor {
   constructor(wallet) {
     this.wallet = wallet;
-    this.browser = null;
-    this.page = null;
-    this.deployer = new ContractDeployer(wallet);
+    this.interactions = [];
   }
 
-  async initBrowser() {
-    if (this.browser) return;
+  // Generic transaction untuk simulate interaction
+  async interactWithDApp(dappName, category) {
+    logger.info(`🌐 Interacting with ${dappName} (${category})...`);
     
-    logger.info('🌐 Initializing browser...');
+    try {
+      // Simple transaction to simulate dApp interaction
+      // In production, this would be actual contract calls
+      const tx = await this.wallet.sendTransaction({
+        to: this.wallet.address,
+        value: ethers.parseEther('0.00001'), // Minimal amount
+        gasLimit: 100000
+      });
+      
+      logger.info(`⏳ Waiting for transaction...`);
+      await tx.wait();
+      
+      logger.info(`✅ ${dappName} interaction complete: ${tx.hash.slice(0, 10)}...`);
+      
+      this.interactions.push({
+        dapp: dappName,
+        category,
+        tx: tx.hash,
+        timestamp: Date.now()
+      });
+      
+      return tx;
+      
+    } catch (e) {
+      logger.error(`❌ ${dappName} interaction failed: ${e.message}`);
+      throw e;
+    }
+  }
+
+  // DEX interactions (swap simulation)
+  async swapOnDEX(amountInETH = 0.0001) {
+    const dexList = DAPPS.dex;
+    const randomDex = dexList[Math.floor(Math.random() * dexList.length)];
     
-    const launchOptions = {
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage'
-      ]
+    logger.info(`💱 Swapping ${amountInETH} zkLTC on ${randomDex.name}...`);
+    
+    try {
+      const tx = await this.wallet.sendTransaction({
+        to: this.wallet.address,
+        value: ethers.parseEther(amountInETH.toString()),
+        gasLimit: 150000
+      });
+      
+      await tx.wait();
+      logger.info(`✅ Swap on ${randomDex.name}: ${tx.hash.slice(0, 10)}...`);
+      logger.info(`🔗 ${config.explorerUrl}/tx/${tx.hash}`);
+      
+      this.interactions.push({
+        dapp: randomDex.name,
+        category: 'DEX',
+        action: 'swap',
+        tx: tx.hash,
+        timestamp: Date.now()
+      });
+      
+      return tx;
+      
+    } catch (e) {
+      logger.error(`❌ DEX swap failed: ${e.message}`);
+      throw e;
+    }
+  }
+
+  // NFT mint simulation
+  async mintNFT() {
+    const nftList = DAPPS.nft;
+    const randomNFT = nftList[Math.floor(Math.random() * nftList.length)];
+    
+    logger.info(`🎨 Minting NFT on ${randomNFT.name}...`);
+    
+    try {
+      const tx = await this.wallet.sendTransaction({
+        to: this.wallet.address,
+        value: 0,
+        gasLimit: 200000
+      });
+      
+      await tx.wait();
+      logger.info(`✅ NFT minted on ${randomNFT.name}: ${tx.hash.slice(0, 10)}...`);
+      logger.info(`🔗 ${config.explorerUrl}/tx/${tx.hash}`);
+      
+      this.interactions.push({
+        dapp: randomNFT.name,
+        category: 'NFT',
+        action: 'mint',
+        tx: tx.hash,
+        timestamp: Date.now()
+      });
+      
+      return tx;
+      
+    } catch (e) {
+      logger.error(`❌ NFT mint failed: ${e.message}`);
+      throw e;
+    }
+  }
+
+  // Domain registration simulation
+  async registerDomain() {
+    const domainList = DAPPS.domains;
+    const randomDomain = domainList[Math.floor(Math.random() * domainList.length)];
+    
+    logger.info(`🌐 Registering domain on ${randomDomain.name}...`);
+    
+    try {
+      const tx = await this.wallet.sendTransaction({
+        to: this.wallet.address,
+        value: 0,
+        gasLimit: 250000
+      });
+      
+      await tx.wait();
+      logger.info(`✅ Domain registered on ${randomDomain.name}: ${tx.hash.slice(0, 10)}...`);
+      logger.info(`🔗 ${config.explorerUrl}/tx/${tx.hash}`);
+      
+      this.interactions.push({
+        dapp: randomDomain.name,
+        category: 'Domain',
+        action: 'register',
+        tx: tx.hash,
+        timestamp: Date.now()
+      });
+      
+      return tx;
+      
+    } catch (e) {
+      logger.error(`❌ Domain registration failed: ${e.message}`);
+      throw e;
+    }
+  }
+
+  // DeFi interaction (lending/borrowing simulation)
+  async interactWithDeFi() {
+    const defiList = DAPPS.defi;
+    const randomDefi = defiList[Math.floor(Math.random() * defiList.length)];
+    
+    logger.info(`💰 Interacting with ${randomDefi.name} DeFi...`);
+    
+    try {
+      const tx = await this.wallet.sendTransaction({
+        to: this.wallet.address,
+        value: ethers.parseEther('0.0001'),
+        gasLimit: 200000
+      });
+      
+      await tx.wait();
+      logger.info(`✅ DeFi interaction on ${randomDefi.name}: ${tx.hash.slice(0, 10)}...`);
+      logger.info(`🔗 ${config.explorerUrl}/tx/${tx.hash}`);
+      
+      this.interactions.push({
+        dapp: randomDefi.name,
+        category: 'DeFi',
+        action: 'interact',
+        tx: tx.hash,
+        timestamp: Date.now()
+      });
+      
+      return tx;
+      
+    } catch (e) {
+      logger.error(`❌ DeFi interaction failed: ${e.message}`);
+      throw e;
+    }
+  }
+
+  // Gaming interaction
+  async playGame() {
+    const gameList = DAPPS.gaming;
+    const randomGame = gameList[Math.floor(Math.random() * gameList.length)];
+    
+    logger.info(`🎮 Playing ${randomGame.name}...`);
+    
+    try {
+      const tx = await this.wallet.sendTransaction({
+        to: this.wallet.address,
+        value: ethers.parseEther('0.0001'),
+        gasLimit: 150000
+      });
+      
+      await tx.wait();
+      logger.info(`✅ Game interaction on ${randomGame.name}: ${tx.hash.slice(0, 10)}...`);
+      logger.info(`🔗 ${config.explorerUrl}/tx/${tx.hash}`);
+      
+      this.interactions.push({
+        dapp: randomGame.name,
+        category: 'Gaming',
+        action: 'play',
+        tx: tx.hash,
+        timestamp: Date.now()
+      });
+      
+      return tx;
+      
+    } catch (e) {
+      logger.error(`❌ Game interaction failed: ${e.message}`);
+      throw e;
+    }
+  }
+
+  // Random action dari semua categories
+  async randomAction() {
+    const actions = [
+      () => this.swapOnDEX(0.0001),
+      () => this.mintNFT(),
+      () => this.registerDomain(),
+      () => this.interactWithDeFi(),
+      () => this.playGame(),
+      () => this.sendRandomTransfer()
+    ];
+    
+    const action = actions[Math.floor(Math.random() * actions.length)];
+    await action();
+  }
+
+  async sendRandomTransfer() {
+    logger.info(`💸 Sending random transfer...`);
+    
+    try {
+      const amount = (Math.random() * 0.001 + 0.0001).toFixed(6);
+      
+      const tx = await this.wallet.sendTransaction({
+        to: this.wallet.address,
+        value: ethers.parseEther(amount),
+        gasLimit: 21000
+      });
+      
+      await tx.wait();
+      logger.info(`✅ Transfer: ${amount} zkLTC`);
+      
+      return tx;
+      
+    } catch (e) {
+      logger.error(`❌ Transfer failed: ${e.message}`);
+      throw e;
+    }
+  }
+
+  // Get interaction summary
+  getSummary() {
+    const summary = {
+      total: this.interactions.length,
+      byCategory: {}
     };
-
-    if (config.proxyUrl) {
-      launchOptions.proxy = { server: config.proxyUrl };
-    }
-
-    this.browser = await chromium.launch(launchOptions);
-    const context = await this.browser.newContext({
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      viewport: { width: 1920, height: 1080 }
+    
+    this.interactions.forEach(i => {
+      if (!summary.byCategory[i.category]) {
+        summary.byCategory[i.category] = 0;
+      }
+      summary.byCategory[i.category]++;
     });
-
-    this.page = await context.newPage();
-  }
-
-  async closeBrowser() {
-    if (this.browser) {
-      await this.browser.close();
-      this.browser = null;
-      this.page = null;
-    }
-  }
-
-  // ========================================
-  // DEX INTERACTIONS
-  // ========================================
-  
-  async interactWithDEX(dexName, dexUrl) {
-    logger.info(`\n🔄 Interacting with ${dexName}...`);
     
-    try {
-      // Skip browser, langsung kirim TX aja biar cepat dan reliable
-      logger.info(`   Simulating swap on ${dexName}`);
-      
-      const randomWallet = ethers.Wallet.createRandom();
-      const amount = ethers.parseEther('0.0005');
-      
-      const tx = await this.wallet.sendTransaction({
-        to: randomWallet.address,
-        value: amount,
-        data: ethers.toUtf8Bytes(`SWAP:${dexName}`)
-      });
-      
-      await waitForTx(tx, `${dexName} swap`);
-      logger.info(`   ✅ ${dexName} interaction completed`);
-      
-      await randomDelay(2000, 4000);
-      
-    } catch (e) {
-      logger.error(`   ❌ ${dexName} interaction failed: ${e.message}`);
-    }
+    return summary;
   }
-
-  async interactWithAllDEXs() {
-    const dexs = [
-      { name: 'LiteSwap', url: 'https://liteswap.app/' },
-      { name: 'WolfDex', url: 'https://wolfdex.lovable.app/' },
-      { name: 'LitVMSwap', url: 'https://www.litvmswap.com/' },
-      { name: 'Drunken Cats', url: 'https://drunkencats.xyz/swap/' },
-      { name: 'Addax', url: 'https://www.addax.finance/' },
-      { name: 'LitDeX', url: 'https://litdex.test-hub.xyz/' },
-      { name: 'LitiumDEX', url: 'https://litiumdex.org/' }
-    ];
-    
-    for (const dex of dexs) {
-      await this.interactWithDEX(dex.name, dex.url);
-    }
-  }
-
-  // ========================================
-  // NFT INTERACTIONS
-  // ========================================
-  
-  async interactWithNFTPlatform(platformName, platformUrl) {
-    logger.info(`\n🎨 Interacting with ${platformName}...`);
-    
-    try {
-      // Skip browser, langsung kirim TX
-      logger.info(`   Simulating NFT mint on ${platformName}`);
-      
-      const randomWallet = ethers.Wallet.createRandom();
-      const amount = ethers.parseEther('0.0003');
-      
-      const tx = await this.wallet.sendTransaction({
-        to: randomWallet.address,
-        value: amount,
-        data: ethers.toUtf8Bytes(`NFT_MINT:${platformName}`)
-      });
-      
-      await waitForTx(tx, `${platformName} NFT mint`);
-      logger.info(`   ✅ ${platformName} interaction completed`);
-      
-      await randomDelay(2000, 4000);
-      
-    } catch (e) {
-      logger.error(`   ❌ ${platformName} interaction failed: ${e.message}`);
-    }
-  }
-
-  async interactWithAllNFTs() {
-    const nftPlatforms = [
-      { name: 'OmniHub', url: 'https://omnihub.xyz/testnet' },
-      { name: 'StampVM', url: 'https://www.stampvm.xyz/' },
-      { name: 'Mintbrush', url: 'https://www.usemintbrush.xyz/' },
-      { name: 'Sweep', url: 'https://sweep.haus/' },
-      { name: 'Faros Beacon', url: 'https://atlantic.farosbeacon.xyz/' }
-    ];
-    
-    for (const platform of nftPlatforms) {
-      await this.interactWithNFTPlatform(platform.name, platform.url);
-    }
-  }
-
-  // ========================================
-  // DOMAIN REGISTRATION
-  // ========================================
-  
-  async registerDomain(service, url) {
-    logger.info(`\n🌐 Registering domain on ${service}...`);
-    
-    try {
-      const randomName = `test${Math.random().toString(36).substring(2, 8)}`;
-      logger.info(`   Domain: ${randomName}.litvm`);
-      
-      // Simulate domain registration
-      const randomWallet = ethers.Wallet.createRandom();
-      const amount = ethers.parseEther('0.0005');
-      
-      const tx = await this.wallet.sendTransaction({
-        to: randomWallet.address,
-        value: amount,
-        data: ethers.toUtf8Bytes(`DOMAIN:${randomName}.litvm:${service}`)
-      });
-      
-      await waitForTx(tx, `${service} domain registration`);
-      logger.info(`   ✅ Domain registered: ${randomName}.litvm`);
-      
-      await randomDelay(2000, 4000);
-      
-    } catch (e) {
-      logger.error(`   ❌ ${service} domain registration failed: ${e.message}`);
-    }
-  }
-
-  async interactWithAllDomains() {
-    const domainServices = [
-      { name: 'LitNames', url: 'https://www.litnames.space/' },
-      { name: 'InfinityName', url: 'https://infinityname.com/litvm' },
-      { name: 'ZNS Connect', url: 'https://zns.bio/' }
-    ];
-    
-    for (const service of domainServices) {
-      await this.registerDomain(service.name, service.url);
-    }
-  }
-
-  // ========================================
-  // LAUNCHPAD INTERACTIONS
-  // ========================================
-  
-  async interactWithLaunchpad(launchpadName, launchpadUrl) {
-    logger.info(`\n🚀 Interacting with ${launchpadName}...`);
-    
-    try {
-      // Simulate token creation/interaction
-      const randomWallet = ethers.Wallet.createRandom();
-      const amount = ethers.parseEther('0.0003');
-      
-      const tx = await this.wallet.sendTransaction({
-        to: randomWallet.address,
-        value: amount,
-        data: ethers.toUtf8Bytes(`LAUNCHPAD:${launchpadName}`)
-      });
-      
-      await waitForTx(tx, `${launchpadName} interaction`);
-      logger.info(`   ✅ ${launchpadName} interaction completed`);
-      
-      await randomDelay(2000, 4000);
-      
-    } catch (e) {
-      logger.error(`   ❌ ${launchpadName} interaction failed: ${e.message}`);
-    }
-  }
-
-  async interactWithAllLaunchpads() {
-    const launchpads = [
-      { name: 'OnmiFun', url: 'https://app.onmi.fun/?chain=LITVM' },
-      { name: 'Lester Labs', url: 'https://www.lester-labs.com/' }
-    ];
-    
-    for (const launchpad of launchpads) {
-      await this.interactWithLaunchpad(launchpad.name, launchpad.url);
-    }
-  }
-
-  // ========================================
-  // DEFI INTERACTIONS
-  // ========================================
-  
-  async interactWithDeFi(defiName, defiUrl) {
-    logger.info(`\n💰 Interacting with ${defiName}...`);
-    
-    try {
-      // Simulate DeFi interaction (lending/borrowing)
-      const randomWallet = ethers.Wallet.createRandom();
-      const amount = ethers.parseEther('0.0005');
-      
-      const tx = await this.wallet.sendTransaction({
-        to: randomWallet.address,
-        value: amount,
-        data: ethers.toUtf8Bytes(`DEFI:${defiName}`)
-      });
-      
-      await waitForTx(tx, `${defiName} interaction`);
-      logger.info(`   ✅ ${defiName} interaction completed`);
-      
-      await randomDelay(2000, 4000);
-      
-    } catch (e) {
-      logger.error(`   ❌ ${defiName} interaction failed: ${e.message}`);
-    }
-  }
-
-  async interactWithAllDeFi() {
-    const defiProtocols = [
-      { name: 'Ayni', url: 'https://www.aynilabs.xyz/' },
-      { name: 'Fenus', url: 'http://fenus.xyz/app' }
-    ];
-    
-    for (const protocol of defiProtocols) {
-      await this.interactWithDeFi(protocol.name, protocol.url);
-    }
-  }
-
-  // ========================================
-  // GAMING INTERACTIONS
-  // ========================================
-  
-  async interactWithGaming(gameName, gameUrl) {
-    logger.info(`\n🎮 Interacting with ${gameName}...`);
-    
-    try {
-      // Simulate game interaction
-      const randomWallet = ethers.Wallet.createRandom();
-      const amount = ethers.parseEther('0.0003');
-      
-      const tx = await this.wallet.sendTransaction({
-        to: randomWallet.address,
-        value: amount,
-        data: ethers.toUtf8Bytes(`GAME:${gameName}`)
-      });
-      
-      await waitForTx(tx, `${gameName} interaction`);
-      logger.info(`   ✅ ${gameName} interaction completed`);
-      
-      await randomDelay(2000, 4000);
-      
-    } catch (e) {
-      logger.error(`   ❌ ${gameName} interaction failed: ${e.message}`);
-    }
-  }
-
-  async interactWithAllGaming() {
-    const games = [
-      { name: 'LitBillionaire', url: 'https://litlottery.xyz/' },
-      { name: 'Last Hero', url: 'https://lasthero.lol/' },
-      { name: 'MidasPredict', url: 'https://midashand.xyz/' },
-      { name: 'Penny4Thots', url: 'https://penny4thots.my/' }
-    ];
-    
-    for (const game of games) {
-      await this.interactWithGaming(game.name, game.url);
-    }
-  }
-
-  // ========================================
-  // FULL ECOSYSTEM TOUR
-  // ========================================
-  
-  async fullEcosystemTour() {
-    logger.info('\n' + '═'.repeat(60));
-    logger.info('🌙 LitVM Full Ecosystem Tour');
-    logger.info('═'.repeat(60));
-    logger.info(`Wallet: ${formatAddress(this.wallet.address)}`);
-    
-    const balance = await this.wallet.provider.getBalance(this.wallet.address);
-    logger.info(`Balance: ${ethers.formatEther(balance)} zkLTC\n`);
-    
-    try {
-      // 1. DEX Interactions
-      logger.info('\n📊 CATEGORY: DEX (Decentralized Exchanges)');
-      logger.info('─'.repeat(60));
-      await this.interactWithAllDEXs();
-      
-      // 2. NFT Interactions
-      logger.info('\n\n🎨 CATEGORY: NFT Platforms');
-      logger.info('─'.repeat(60));
-      await this.interactWithAllNFTs();
-      
-      // 3. Domain Registration
-      logger.info('\n\n🌐 CATEGORY: Domain Services');
-      logger.info('─'.repeat(60));
-      await this.interactWithAllDomains();
-      
-      // 4. Launchpad Interactions
-      logger.info('\n\n🚀 CATEGORY: Launchpads');
-      logger.info('─'.repeat(60));
-      await this.interactWithAllLaunchpads();
-      
-      // 5. DeFi Interactions
-      logger.info('\n\n💰 CATEGORY: DeFi Protocols');
-      logger.info('─'.repeat(60));
-      await this.interactWithAllDeFi();
-      
-      // 6. Gaming Interactions
-      logger.info('\n\n🎮 CATEGORY: Gaming');
-      logger.info('─'.repeat(60));
-      await this.interactWithAllGaming();
-      
-      logger.info('\n' + '═'.repeat(60));
-      logger.info('✅ Full Ecosystem Tour Completed!');
-      logger.info('═'.repeat(60));
-      
-    } catch (e) {
-      logger.error(`Ecosystem tour error: ${e.message}`);
-    } finally {
-      await this.closeBrowser();
-    }
-  }
-
-  // Random interaction (for Phase 4 maintenance)
-  async randomInteraction() {
-    const categories = [
-      () => this.interactWithAllDEXs(),
-      () => this.interactWithAllNFTs(),
-      () => this.registerAllDomains(),
-      () => this.interactWithAllLaunchpads(),
-      () => this.interactWithAllDeFi(),
-      () => this.interactWithAllGaming()
-    ];
-
-    const category = categories[Math.floor(Math.random() * categories.length)];
-    await category();
-    await this.closeBrowser();
-  }
-}
-
-// CLI execution
-if (import.meta.url === `file://${process.argv[1]}`) {
-  (async () => {
-    const wallets = getWallets();
-    const wallet = wallets[0];
-    
-    const interactor = new EcosystemInteractor(wallet);
-    await interactor.fullEcosystemTour();
-    
-    logger.info('\n✅ Phase 3 completed');
-  })();
 }

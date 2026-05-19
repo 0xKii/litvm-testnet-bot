@@ -1,6 +1,5 @@
 import logger from './logger.js';
-import { getWallets, getProxyForAccount, config, sleep, randomDelay, formatAddress, getBalance } from './utils.js';
-import { FaucetClaimer } from './phase1-faucet.js';
+import { getWallets, config, sleep, randomDelay, formatAddress, getBalance } from './utils.js';
 import { ContractDeployer } from './phase2-deploy.js';
 import { EcosystemInteractor } from './phase3-ecosystem.js';
 import fs from 'fs';
@@ -40,12 +39,11 @@ export class MultiAccountOrchestrator {
   getAccountState(address) {
     if (!this.accountStates[address]) {
       this.accountStates[address] = {
-        lastFaucet: 0,
         lastActivity: 0,
         totalTxs: 0,
         deploymentsCount: 0,
         ecosystemActions: 0,
-        phase: 1
+        phase: 2  // Skip faucet, start at phase 2
       };
     }
     return this.accountStates[address];
@@ -60,197 +58,195 @@ export class MultiAccountOrchestrator {
   async processAccount(wallet, index) {
     const address = wallet.address;
     const state = this.getAccountState(address);
-    const proxy = getProxyForAccount(index);
     
     logger.info(`\n${'='.repeat(60)}`);
-    logger.info(`Processing Account ${index + 1}/${this.wallets.length}: ${formatAddress(address)}`);
-    logger.info(`Phase: ${state.phase} | Total TXs: ${state.totalTxs} | Deployments: ${state.deploymentsCount}`);
-    if (proxy) {
-      logger.info(`Proxy: ${proxy.split('@')[1] || proxy}`);
-    }
+    logger.info(`Account ${index + 1}/${this.wallets.length}: ${formatAddress(address)}`);
+    logger.info(`Phase: ${state.phase} | TXs: ${state.totalTxs} | Deployments: ${state.deploymentsCount}`);
     logger.info(`${'='.repeat(60)}\n`);
 
     try {
       const balance = await getBalance(wallet);
-      logger.info(`Current balance: ${balance} zkLTC`);
+      logger.info(`Balance: ${balance} zkLTC`);
 
-      // Phase 1: Faucet + Basic TXs
-      if (state.phase === 1) {
-        const claimer = new FaucetClaimer(wallet, proxy);
-        const claimed = await claimer.claim();
-        
-        if (claimed) {
-          this.updateAccountState(address, { 
-            lastFaucet: Date.now(),
-            lastActivity: Date.now()
-          });
-          
-          await claimer.sendRandomTransactions(5);
-          this.updateAccountState(address, { 
-            totalTxs: state.totalTxs + 5,
-            phase: 2
-          });
-        }
+      if (parseFloat(balance) < 0.001) {
+        logger.warn(`⚠️  Low balance! Please claim faucet manually at: https://liteforge.hub.caldera.xyz/`);
+        logger.info(`✅ Account ${index + 1} skipped (low balance)\n`);
+        return;
       }
 
       // Phase 2: Contract Deployment
       if (state.phase === 2 && parseFloat(balance) > 0.01) {
+        logger.info('📝 Phase 2: Deploying contracts...');
         const deployer = new ContractDeployer(wallet);
         
         try {
-          await deployer.deployToken(`Token${index}`, `TKN${index}`, 1000000);
-          await deployer.deployNFT(`NFT${index}`, `NFT${index}`);
-          deployer.saveDeployments();
+          await deployer.deploySimpleContract();
+          await randomDelay(5000, 10000);
           
-          this.updateAccountState(address, {
+          await deployer.deploySimpleContract();
+          await randomDelay(5000, 10000);
+          
+          this.updateAccountState(address, { 
             deploymentsCount: state.deploymentsCount + 2,
             totalTxs: state.totalTxs + 2,
-            lastActivity: Date.now(),
-            phase: 3
+            phase: 3,
+            lastActivity: Date.now()
           });
+          
+          logger.info('✅ Phase 2 complete');
         } catch (e) {
-          logger.error(`Deployment failed for account ${index + 1}: ${e.message}`);
+          logger.error(`Phase 2 error: ${e.message}`);
         }
       }
 
       // Phase 3: Ecosystem Interaction
       if (state.phase === 3 && parseFloat(balance) > 0.005) {
+        logger.info('🌐 Phase 3: Ecosystem interactions...');
         const interactor = new EcosystemInteractor(wallet);
         
         try {
-          if (config.randomizeActions) {
-            await interactor.randomInteraction();
-            this.updateAccountState(address, {
-              ecosystemActions: state.ecosystemActions + 1,
+          // DEX swaps
+          for (let i = 0; i < config.dexSwaps; i++) {
+            await interactor.swapOnDEX(0.0001);
+            await randomDelay(10000, 20000);
+            this.updateAccountState(address, { 
               totalTxs: state.totalTxs + 1,
-              lastActivity: Date.now()
-            });
-          } else {
-            await interactor.fullTour();
-            this.updateAccountState(address, {
-              ecosystemActions: state.ecosystemActions + 4,
-              totalTxs: state.totalTxs + 4,
-              lastActivity: Date.now(),
-              phase: 4
+              ecosystemActions: state.ecosystemActions + 1
             });
           }
+          
+          // NFT mints
+          for (let i = 0; i < config.nftMints; i++) {
+            await interactor.mintNFT();
+            await randomDelay(10000, 20000);
+            this.updateAccountState(address, { 
+              totalTxs: state.totalTxs + 1,
+              ecosystemActions: state.ecosystemActions + 1
+            });
+          }
+          
+          // Domain registers
+          for (let i = 0; i < config.domainRegisters; i++) {
+            await interactor.registerDomain();
+            await randomDelay(10000, 20000);
+            this.updateAccountState(address, { 
+              totalTxs: state.totalTxs + 1,
+              ecosystemActions: state.ecosystemActions + 1
+            });
+          }
+          
+          // DeFi interactions
+          for (let i = 0; i < config.defiInteractions; i++) {
+            await interactor.interactWithDeFi();
+            await randomDelay(10000, 20000);
+            this.updateAccountState(address, { 
+              totalTxs: state.totalTxs + 1,
+              ecosystemActions: state.ecosystemActions + 1
+            });
+          }
+          
+          // Game plays
+          for (let i = 0; i < config.gamePlays; i++) {
+            await interactor.playGame();
+            await randomDelay(10000, 20000);
+            this.updateAccountState(address, { 
+              totalTxs: state.totalTxs + 1,
+              ecosystemActions: state.ecosystemActions + 1
+            });
+          }
+          
+          this.updateAccountState(address, { 
+            phase: 4,
+            lastActivity: Date.now()
+          });
+          
+          logger.info('✅ Phase 3 complete');
         } catch (e) {
-          logger.error(`Ecosystem interaction failed for account ${index + 1}: ${e.message}`);
+          logger.error(`Phase 3 error: ${e.message}`);
         }
       }
 
-      // Phase 4: Maintenance (keep active)
+      // Phase 4: Maintenance (random TXs)
       if (state.phase === 4) {
-        const hoursSinceActivity = (Date.now() - state.lastActivity) / 3600000;
+        logger.info('🔄 Phase 4: Maintenance mode');
+        const interactor = new EcosystemInteractor(wallet);
         
-        if (hoursSinceActivity > 24 && parseFloat(balance) > 0.001) {
-          logger.info('Performing maintenance activity...');
-          const interactor = new EcosystemInteractor(wallet);
-          await interactor.randomInteraction();
-          
-          this.updateAccountState(address, {
-            totalTxs: state.totalTxs + 1,
-            lastActivity: Date.now()
-          });
-        } else {
-          logger.info('Account is active, skipping maintenance');
+        for (let i = 0; i < config.maintenanceActions; i++) {
+          try {
+            await interactor.randomAction();
+            await randomDelay(10000, 20000);
+            this.updateAccountState(address, { 
+              totalTxs: state.totalTxs + 1,
+              lastActivity: Date.now()
+            });
+          } catch (e) {
+            logger.error(`Maintenance action error: ${e.message}`);
+          }
         }
+        
+        logger.info('✅ Maintenance complete');
       }
 
       logger.info(`✅ Account ${index + 1} processing completed\n`);
       
     } catch (e) {
-      logger.error(`Error processing account ${index + 1}: ${e.message}`);
+      logger.error(`Account processing error: ${e.message}`);
     }
   }
 
-  async runCycle() {
-    logger.info('\n' + '█'.repeat(60));
+  async runOnce() {
     logger.info('🚀 STARTING ORCHESTRATION CYCLE');
     logger.info('█'.repeat(60) + '\n');
     
-    const startTime = Date.now();
-
     for (let i = 0; i < this.wallets.length; i++) {
       await this.processAccount(this.wallets[i], i);
       
-      // Delay between accounts (except last one)
       if (i < this.wallets.length - 1) {
-        const delay = config.accountDelay + (Math.random() * 10000); // Add random jitter
-        logger.info(`⏳ Waiting ${(delay / 1000).toFixed(1)}s before next account...\n`);
+        const delay = randomDelay(
+          config.accountDelay * 1000,
+          config.accountDelay * 1500
+        );
+        logger.info(`⏳ Waiting ${(delay/1000).toFixed(1)}s before next account...\n`);
         await sleep(delay);
       }
     }
-
-    const duration = ((Date.now() - startTime) / 1000 / 60).toFixed(1);
     
     logger.info('\n' + '█'.repeat(60));
-    logger.info(`✅ ORCHESTRATION CYCLE COMPLETED (${duration} minutes)`);
-    logger.info('█'.repeat(60) + '\n');
-    
+    logger.info('✅ ORCHESTRATION CYCLE COMPLETE');
     this.printSummary();
+  }
+
+  async start24HourLoop() {
+    logger.info('🔄 Starting 24-hour loop mode...\n');
+    
+    while (true) {
+      await this.runOnce();
+      
+      const nextRun = new Date(Date.now() + 24 * 3600 * 1000);
+      logger.info(`\n⏰ Next run: ${nextRun.toLocaleString()}`);
+      logger.info('💤 Sleeping for 24 hours...\n');
+      
+      await sleep(24 * 3600 * 1000);
+    }
   }
 
   printSummary() {
     logger.info('\n📊 ACCOUNT SUMMARY:');
     logger.info('─'.repeat(60));
     
-    this.wallets.forEach((wallet, i) => {
-      const state = this.getAccountState(wallet.address);
-      logger.info(`Account ${i + 1}: ${formatAddress(wallet.address)}`);
-      logger.info(`  Phase: ${state.phase} | TXs: ${state.totalTxs} | Deployments: ${state.deploymentsCount} | Ecosystem: ${state.ecosystemActions}`);
-    });
+    let totalTxs = 0;
+    let totalDeployments = 0;
+    let totalEcosystem = 0;
     
+    for (const [address, state] of Object.entries(this.accountStates)) {
+      logger.info(`${formatAddress(address)}: Phase ${state.phase} | ${state.totalTxs} TXs | ${state.deploymentsCount} deploys`);
+      totalTxs += state.totalTxs;
+      totalDeployments += state.deploymentsCount;
+      totalEcosystem += state.ecosystemActions;
+    }
+    
+    logger.info('─'.repeat(60));
+    logger.info(`Total: ${totalTxs} TXs | ${totalDeployments} Deployments | ${totalEcosystem} Ecosystem`);
     logger.info('─'.repeat(60) + '\n');
   }
-
-  async runOnce() {
-    await this.runCycle();
-  }
-
-  async start24HourLoop() {
-    if (!config.multiAccountEnabled) {
-      logger.error('Multi-account mode disabled in config');
-      return;
-    }
-
-    logger.info('🤖 Starting 24/7 orchestration loop...');
-    logger.info(`Accounts: ${this.wallets.length}`);
-    logger.info(`Interval: Once per day (24 hours)`);
-    logger.info(`Randomize: ${config.randomizeActions}`);
-    
-    while (true) {
-      try {
-        await this.runCycle();
-        
-        // Sleep 24 hours
-        const sleepHours = 24;
-        logger.info(`\n💤 Sleeping for ${sleepHours} hours (next cycle tomorrow)...`);
-        logger.info(`Next run: ${new Date(Date.now() + sleepHours * 3600000).toLocaleString('id-ID', { timeZone: 'Asia/Jayapura' })} WIT\n`);
-        
-        await sleep(sleepHours * 3600000);
-        
-      } catch (e) {
-        logger.error(`Cycle error: ${e.message}`);
-        logger.info('Retrying in 10 minutes...');
-        await sleep(600000);
-      }
-    }
-  }
-}
-
-// CLI execution
-if (import.meta.url === `file://${process.argv[1]}`) {
-  (async () => {
-    const orchestrator = new MultiAccountOrchestrator();
-    
-    const mode = process.argv[2] || 'once';
-    
-    if (mode === 'loop') {
-      await orchestrator.start24HourLoop();
-    } else {
-      await orchestrator.runOnce();
-      process.exit(0);
-    }
-  })();
 }

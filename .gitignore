@@ -1,12 +1,15 @@
 # Environment & Secrets
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 *.key
 *.pem
+*-auth.env
+*-cookies.json
 
 # Private Keys & Wallets
-private-keys-*.txt
+private-keys*.txt
+wallet-config.json
 proxies.txt
 proxies-*.txt
 temp-keys.txt
@@ -15,6 +18,18 @@ temp-keys.txt
 logs/
 data/
 *.log
+bot-state.json
+orchestrator-state.json
+faucet-state.json
+
+# Screenshots & Debug
+*.png
+*.jpg
+*.jpeg
+debug-*.js
+debug-*.json
+page-structure*.json
+testnet-page.png
 
 # Node modules
 node_modules/
@@ -23,14 +38,22 @@ package-lock.json
 # OS
 .DS_Store
 Thumbs.db
+*~
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*.sublime-*
 
 # Temporary files
 temp/
 tmp/
 *.tmp
+*.bak
+*.backup
+
+# Test files
+test-*.js
+scrape-*.js

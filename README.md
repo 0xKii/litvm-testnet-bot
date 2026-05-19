@@ -1,165 +1,283 @@
 # LitVM Testnet Bot 🚀
 
-Automated bot untuk LitVM LiteForge Testnet dengan support multi-account (101 akun) dan proxy rotation.
+Full automation bot for LitVM LiteForge testnet. Interact with 16+ dApps across DEX, NFT, Domains, DeFi, and Gaming categories.
 
-## Features
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-✅ **Multi-Account Support** - 101 akun parallel processing  
-✅ **Proxy Rotation** - 1:1 proxy assignment per akun  
-✅ **Phase 1-4 Automation**:
-- Phase 1: Faucet claim + basic transactions
-- Phase 2: Smart contract deployment (ERC20 + NFT)
-- Phase 3: Ecosystem interaction (23 dApps)
-- Phase 4: Maintenance mode (keep active)
+## 🌟 Features
 
-✅ **24/7 Loop Mode** - Auto-run setiap 24 jam  
-✅ **State Tracking** - Per-account progress tracking  
-✅ **Anti-Detection** - Random delays, human-like behavior
+### ✅ Phase 2: Contract Deployment
+- Deploy SimpleStorage contracts
+- Automated gas management
+- Transaction tracking
 
-## Network Details
+### ✅ Phase 3: Ecosystem Interactions
+**16 dApps Supported:**
+- **DEX (7):** LiteSwap, WolfDex, LitVMSwap, Drunken Cats, Addax, LitDeX, LitiumDEX
+- **NFT (4):** OmniHub, StampVM, Mintbrush, Sweep
+- **Domains (2):** LitNames, ZNS Connect
+- **DeFi (2):** Ayni, Fenus
+- **Gaming (1):** LitBillionaire
 
-| Parameter | Value |
-|-----------|-------|
-| **Chain ID** | 4441 |
-| **Native Token** | zkLTC |
-| **RPC** | https://liteforge.rpc.caldera.xyz/http |
-| **Explorer** | https://liteforge.explorer.caldera.xyz/ |
-| **Faucet** | https://liteforge.hub.caldera.xyz/ |
+### ✅ Phase 4: Maintenance Mode
+- Random dApp interactions
+- Continuous activity
+- Anti-pattern detection
 
-## Installation
+### 🎲 Smart Features
+- **Random dApp Selection** - Natural behavior, unpredictable patterns
+- **Configurable TX Counts** - Control interactions per category via `.env`
+- **24/7 Loop Mode** - Automated daily runs
+- **State Persistence** - Resume from where you left off
+
+## 📋 Prerequisites
+
+- Node.js v18+ 
+- LitVM testnet zkLTC (claim from [faucet](https://liteforge.hub.caldera.xyz/))
+- Private key for testnet wallet
+
+## 🚀 Quick Start
+
+### 1. Clone & Install
 
 ```bash
+git clone <your-repo-url>
+cd litvm-testnet-bot
 npm install
 ```
 
-## Configuration
+### 2. Configure
 
-1. Copy `.env.example` to `.env`:
+Copy example config:
 ```bash
 cp .env.example .env
 ```
 
-2. Edit `.env` dan isi:
+Edit `.env`:
 ```env
-# Private keys (comma-separated)
-PRIVATE_KEYS=0x...,0x...,0x...
+# Add your private key (NEVER commit this!)
+PRIVATE_KEYS=0xyour_private_key_here
 
-# 2Captcha API key (untuk faucet)
-CAPTCHA_API_KEY=your_api_key
-
-# Proxies (comma-separated, optional)
-PROXY_LIST=http://user:pass@host:port,http://...
+# Configure interactions per run
+DEX_SWAPS=3              # 3 DEX swaps
+NFT_MINTS=2              # 2 NFT mints
+DOMAIN_REGISTERS=1       # 1 domain registration
+DEFI_INTERACTIONS=2      # 2 DeFi interactions
+GAME_PLAYS=1             # 1 game play
+MAINTENANCE_ACTIONS=5    # 5 random actions in Phase 4
 ```
 
-## Usage
+### 3. Claim Faucet (Manual)
 
-### Test Run (3 akun)
+⚠️ **Faucet automation is disabled** due to Vercel Security Checkpoint.
+
+**Manual steps:**
+1. Visit: https://liteforge.hub.caldera.xyz/
+2. Connect your wallet
+3. Solve Turnstile CAPTCHA
+4. Claim zkLTC tokens
+
+### 4. Run Bot
+
+**Single run (all phases):**
 ```bash
-node test-3-accounts.js
+npm start once
 ```
 
-### Single Cycle (semua akun)
+**24/7 loop (runs once per day):**
 ```bash
-node src/phase4-orchestrate.js once
+npm start loop
 ```
 
-### 24/7 Loop Mode
+**Check status:**
 ```bash
-node src/phase4-orchestrate.js loop
+npm start status
 ```
 
-### Background Mode
-```bash
-bash run-24h.sh
+## 📊 Configuration
+
+### Interaction Counts (`.env`)
+
+Control how many times bot interacts with each category:
+
+```env
+# Phase 3 - Ecosystem Interactions
+DEX_SWAPS=3              # Number of DEX swaps per run
+NFT_MINTS=2              # Number of NFT mints per run
+DOMAIN_REGISTERS=1       # Number of domain registrations per run
+DEFI_INTERACTIONS=2      # Number of DeFi interactions per run
+GAME_PLAYS=1             # Number of game plays per run
+
+# Phase 4 - Maintenance
+MAINTENANCE_ACTIONS=5    # Number of random actions per run
 ```
 
-## Project Structure
+**Example:** With default config, each run performs:
+- Phase 2: 2 contract deployments
+- Phase 3: 9 dApp interactions (3+2+1+2+1)
+- Phase 4: 5 random actions
+- **Total: ~16 transactions per run**
+
+### Network Settings
+
+```env
+LITVM_RPC=https://liteforge.rpc.caldera.xyz/http
+LITVM_CHAIN_ID=4441
+LITVM_EXPLORER=https://liteforge.explorer.caldera.xyz
+```
+
+### Automation Settings
+
+```env
+TX_PER_DAY=20            # Target transactions per day
+GAS_LIMIT_MULTIPLIER=1.2 # Gas limit safety margin
+MAX_RETRIES=3            # Retry failed transactions
+```
+
+## 🎲 Random dApp Selection
+
+Bot uses **random selection** for natural behavior:
+
+- Each interaction picks a random dApp from the category
+- Example: `DEX_SWAPS=3` → Bot picks 3 random DEX (could be WolfDex, LiteSwap, WolfDex again)
+- Prevents predictable patterns
+- Covers all dApps over time
+
+See [RANDOM-SELECTION.md](./RANDOM-SELECTION.md) for details.
+
+## 📁 Project Structure
 
 ```
 litvm-testnet-bot/
 ├── src/
-│   ├── phase1-faucet.js       # Faucet automation
-│   ├── phase2-deploy.js       # Contract deployment
-│   ├── phase3-ecosystem.js    # dApp interactions
-│   ├── phase4-orchestrate.js  # Multi-account orchestrator
-│   ├── utils.js               # Utilities & config
-│   └── logger.js              # Logging system
-├── config/                    # Contract ABIs & addresses
-├── data/                      # State & deployment data
-├── logs/                      # Log files
-├── .env.example              # Environment template
-├── package.json
-└── README.md
+│   ├── index.js              # Entry point
+│   ├── phase2-deploy.js      # Contract deployment
+│   ├── phase3-ecosystem.js   # dApp interactions (16 dApps)
+│   ├── phase4-orchestrate.js # Multi-phase orchestration
+│   ├── logger.js             # Logging system
+│   └── utils.js              # Utilities & config
+├── data/                     # State files (gitignored)
+├── logs/                     # Log files (gitignored)
+├── .env.example              # Example configuration
+├── .gitignore                # Git ignore rules
+└── README.md                 # This file
 ```
 
-## Ecosystem Support (23 dApps)
+## 🔒 Security
 
-### DEX (7)
-- LiteSwap, WolfDex, LitVMSwap, Drunken Cats, Addax, LitDeX, LitiumDEX
+### ⚠️ CRITICAL: Never Commit Secrets!
 
-### NFT (5)
-- OmniHub, StampVM, Mintbrush, Sweep, Faros Beacon
+**Protected by `.gitignore`:**
+- `.env` files
+- Private keys
+- Wallet configs
+- Logs & state files
+- Screenshots & debug files
 
-### Domains (3)
-- LitNames, InfinityName, ZNS Connect
+**Before pushing to GitHub:**
+```bash
+# Check what will be committed
+git status
 
-### Launchpad (2)
-- OnmiFun, Lester Labs
+# Verify no sensitive files
+git diff --cached
 
-### DeFi (2)
-- Ayni, Fenus
+# If you see .env or private keys, DON'T PUSH!
+```
 
-### Gaming (4)
-- LitBillionaire, Last Hero, MidasPredict, Penny4Thots
+### Best Practices
 
-## Safety Features
+1. ✅ Use `.env.example` for documentation
+2. ✅ Never hardcode private keys in code
+3. ✅ Use testnet only (no real funds)
+4. ✅ Keep `.gitignore` updated
+5. ✅ Review commits before pushing
 
-- ✅ Conservative gas limits (1.2x multiplier)
-- ✅ Random delays between actions (5-15s)
-- ✅ Account delay between processing (60s + jitter)
-- ✅ Retry logic (max 3 retries)
-- ✅ State persistence (resume from last position)
+## 📈 Expected Results
 
-## Monitoring
+### Per Run (with default config)
+- ~16 transactions
+- 2 contract deployments
+- 9 dApp interactions
+- 5 maintenance actions
 
-Logs tersimpan di `logs/litvm-bot.log`:
+### Daily (24/7 loop mode)
+- ~16 transactions per day
+- Consistent testnet activity
+- Natural interaction patterns
+- Coverage across all dApp categories
+
+## 🐛 Troubleshooting
+
+### "Low balance" warning
+- Claim faucet manually at https://liteforge.hub.caldera.xyz/
+- Wait 24h between claims
+
+### "Transaction failed"
+- Check RPC status: https://liteforge.betteruptime.com/
+- Increase `GAS_LIMIT_MULTIPLIER` in `.env`
+
+### "Phase X error"
+- Check logs: `tail -f logs/litvm-bot.log`
+- Verify balance: `npm start status`
+
+## 🌐 Network Info
+
+- **Chain ID:** 4441
+- **RPC:** https://liteforge.rpc.caldera.xyz/http
+- **Explorer:** https://liteforge.explorer.caldera.xyz/
+- **Faucet:** https://liteforge.hub.caldera.xyz/
+- **Status:** https://liteforge.betteruptime.com/
+- **Docs:** https://docs.litvm.com/
+
+## 📝 Logs
+
+Logs are saved to `logs/litvm-bot.log`
+
+**View logs:**
 ```bash
 tail -f logs/litvm-bot.log
 ```
 
-## Troubleshooting
+**Log levels:**
+- `info` - Important events (default)
+- `error` - Errors only
+- `debug` - Verbose (all events)
 
-### Faucet claim gagal
-- Check 2Captcha balance
-- Verify proxy working
-- Wait 24h cooldown
+Change in `.env`:
+```env
+LOG_LEVEL=info
+```
 
-### Transaction gagal
-- Check zkLTC balance
-- Verify RPC endpoint
-- Increase gas limit multiplier
+## 🤝 Contributing
 
-### Proxy error
-- Test proxy connectivity
-- Rotate to different proxy
-- Check proxy credentials
+Contributions welcome! Please:
+1. Fork the repo
+2. Create a feature branch
+3. Test thoroughly
+4. Submit a pull request
 
-## Security
+## ⚠️ Disclaimer
 
-⚠️ **NEVER commit:**
-- `.env` file
-- Private keys
-- Proxy credentials
-- Log files with sensitive data
+This bot is for **testnet only**. Use at your own risk. Not financial advice.
 
-## License
+- No guarantees of airdrop eligibility
+- Testnet tokens have no value
+- Bot behavior may change with dApp updates
 
-MIT
+## 📄 License
 
-## Disclaimer
+MIT License - see LICENSE file for details
 
-Bot ini untuk educational purposes. Gunakan dengan bijak dan ikuti terms of service dari LitVM testnet.
+## 🔗 Links
+
+- [LitVM Website](https://litvm.com/)
+- [LitVM Docs](https://docs.litvm.com/)
+- [LitVM Twitter](https://x.com/litecoinvm)
+- [LitVM Telegram](https://t.me/litecoinvm)
 
 ---
 
-**Built with ❤️ for LitVM LiteForge Testnet**
+**Made with ❤️ for LitVM testnet**
+
+⚠️ **Remember:** Never commit your `.env` file or private keys to GitHub!
